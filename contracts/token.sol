@@ -1,18 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/*
-
-  /$$$$$$          /$$                     /$$$$$$$   /$$$$$$   /$$$$$$ 
- /$$__  $$        |__/                    | $$__  $$ /$$__  $$ /$$__  $$
-| $$  \__//$$$$$$  /$$  /$$$$$$   /$$$$$$$| $$  \ $$| $$  \ $$| $$  \ $$
-| $$$$   /$$__  $$| $$ /$$__  $$ /$$_____/| $$  | $$| $$$$$$$$| $$  | $$
-| $$_/  | $$  \__/| $$| $$$$$$$$|  $$$$$$ | $$  | $$| $$__  $$| $$  | $$
-| $$    | $$      | $$| $$_____/ \____  $$| $$  | $$| $$  | $$| $$  | $$
-| $$    | $$      | $$|  $$$$$$$ /$$$$$$$/| $$$$$$$/| $$  | $$|  $$$$$$/
-|__/    |__/      |__/ \_______/|_______/ |_______/ |__/  |__/ \______/ 
-
-*/
-
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -52,24 +39,24 @@ contract Administrable is Ownable {
 
 }
 
-contract FriesDAOToken is ERC20Votes, Administrable {
+contract CupDAOToken is ERC20Votes, Administrable {
 
-    constructor() ERC20("friesDAO", "FRIES") ERC20Permit("FRIES") {
+    constructor() ERC20("cupDAO", "CUP") ERC20Permit("CUP") {
     }
 
-    // Mint amount of FRIES to account
+    // Mint amount of CUP to account
 
     function mint(address account, uint256 amount) external onlyAdmin {
         _mint(account, amount);
     }
 
-    // Burn FRIES from caller
+    // Burn CUP from caller
 
     function burn(uint256 amount) external {
         _burn(_msgSender(), amount);
     }
 
-    // Burn FRIES from account with approval
+    // Burn CUP from account with approval
 
     function burnFrom(address account, uint256 amount) external {
         uint256 currentAllowance = allowance(account, _msgSender());
