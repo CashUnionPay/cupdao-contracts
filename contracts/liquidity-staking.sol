@@ -1,25 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/*
-
-  /$$$$$$          /$$                     /$$$$$$$   /$$$$$$   /$$$$$$ 
- /$$__  $$        |__/                    | $$__  $$ /$$__  $$ /$$__  $$
-| $$  \__//$$$$$$  /$$  /$$$$$$   /$$$$$$$| $$  \ $$| $$  \ $$| $$  \ $$
-| $$$$   /$$__  $$| $$ /$$__  $$ /$$_____/| $$  | $$| $$$$$$$$| $$  | $$
-| $$_/  | $$  \__/| $$| $$$$$$$$|  $$$$$$ | $$  | $$| $$__  $$| $$  | $$
-| $$    | $$      | $$| $$_____/ \____  $$| $$  | $$| $$  | $$| $$  | $$
-| $$    | $$      | $$|  $$$$$$$ /$$$$$$$/| $$$$$$$/| $$  | $$|  $$$$$$/
-|__/    |__/      |__/ \_______/|_______/ |_______/ |__/  |__/ \______/ 
-
-*/
-
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract FriesDAOLiquidityStaking is Ownable {
+contract CupDAOLiquidityStaking is Ownable {
 
     using SafeERC20 for IERC20;
 
@@ -28,13 +15,13 @@ contract FriesDAOLiquidityStaking is Ownable {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
-        // We do some fancy math here. Basically, any point in time, the amount of FRIES
+        // We do some fancy math here. Basically, any point in time, the amount of CUP
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accFriesPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accCupPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accFriesPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accCupPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -43,14 +30,14 @@ contract FriesDAOLiquidityStaking is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. FRIES to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that FRIES distribution occurs.
-        uint256 accFriesPerShare; // Accumulated FRIES per share, times 1e12. See below.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. CUP to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that CUP distribution occurs.
+        uint256 accCupPerShare; // Accumulated CUP per share, times 1e12. See below.
         uint256 totalStaked;      // Total amount of LP token staked in pool.
     }
 
-    IERC20 public FRIES;          // friesDAO token
-    uint256 public friesPerBlock; // Amount of FRIES distributed per block between all pools
+    IERC20 public CUP;          // cupDAO token
+    uint256 public cupPerBlock; // Amount of CUP distributed per block between all pools
 
     PoolInfo[] public poolInfo;                                         // Info of each pool
     mapping (uint256 => mapping (address => UserInfo)) public userInfo; // Info of each user by pool ID
@@ -60,7 +47,7 @@ contract FriesDAOLiquidityStaking is Ownable {
 
     // Events
 
-    event FriesPerBlockChanged(uint256 friesPerBlock);
+    event CupPerBlockChanged(uint256 cupPerBlock);
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -77,9 +64,9 @@ contract FriesDAOLiquidityStaking is Ownable {
 
     // Initialize liquidity staking data
 
-    constructor(address fries, uint256 start) {
-        FRIES = IERC20(fries);
-        friesPerBlock = 1 ether; // 1 FRIES distributed per block
+    constructor(address cup, uint256 start) {
+        CUP = IERC20(cup);
+        cupPerBlock = 1 ether; // 1 CUP distributed per block
         startBlock = start;      // Rewards start
     }
 
@@ -101,12 +88,12 @@ contract FriesDAOLiquidityStaking is Ownable {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accFriesPerShare: 0,
+            accCupPerShare: 0,
             totalStaked: 0
         }));
     }
 
-    // Update FRIES allocation points of a pool
+    // Update CUP allocation points of a pool
 
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) external onlyOwner {
         if (_withUpdate) {
@@ -116,12 +103,12 @@ contract FriesDAOLiquidityStaking is Ownable {
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
-    // Update FRIES distribution rate per block
+    // Update CUP distribution rate per block
 
-    function setFriesPerBlock(uint256 ratePerBlock) external onlyOwner {
+    function setCupPerBlock(uint256 ratePerBlock) external onlyOwner {
         massUpdatePools();
-        friesPerBlock = ratePerBlock;
-        emit FriesPerBlockChanged(friesPerBlock);
+        cupPerBlock = ratePerBlock;
+        emit CupPerBlockChanged(cupPerBlock);
     }
 
     // Calculate reward multiplier between blocks
@@ -130,22 +117,22 @@ contract FriesDAOLiquidityStaking is Ownable {
         return _to - _from;
     }
 
-    // Calculate pending FRIES reward for a user on a pool
+    // Calculate pending CUP reward for a user on a pool
 
-    function pendingFries(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingCup(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
-        uint256 accFriesPerShare = pool.accFriesPerShare;
+        uint256 accCupPerShare = pool.accCupPerShare;
         uint256 lpSupply = pool.totalStaked;
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 friesReward = multiplier * friesPerBlock * pool.allocPoint / totalAllocPoint;
-            accFriesPerShare += friesReward * 1e12 / lpSupply;
+            uint256 cupReward = multiplier * cupPerBlock * pool.allocPoint / totalAllocPoint;
+            accCupPerShare += cupReward * 1e12 / lpSupply;
         }
 
-        return user.amount * accFriesPerShare / 1e12 - user.rewardDebt;
+        return user.amount * accCupPerShare / 1e12 - user.rewardDebt;
     }
 
     // Update reward data on all pools
@@ -170,12 +157,12 @@ contract FriesDAOLiquidityStaking is Ownable {
         }
 
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 friesReward = multiplier * friesPerBlock * pool.allocPoint / totalAllocPoint;
-        pool.accFriesPerShare += friesReward * 1e12 / lpSupply;
+        uint256 cupReward = multiplier * cupPerBlock * pool.allocPoint / totalAllocPoint;
+        pool.accCupPerShare += cupReward * 1e12 / lpSupply;
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit tokens for FRIES distribution
+    // Deposit tokens for CUP distribution
 
     function deposit(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
@@ -183,9 +170,9 @@ contract FriesDAOLiquidityStaking is Ownable {
         updatePool(_pid);
 
         if (user.amount > 0) {
-            uint256 pending = user.amount * pool.accFriesPerShare / 1e12 - user.rewardDebt;
+            uint256 pending = user.amount * pool.accCupPerShare / 1e12 - user.rewardDebt;
             if (pending > 0) {
-                safeFriesTransfer(_msgSender(), pending);
+                safeCupTransfer(_msgSender(), pending);
             }
         }
 
@@ -194,7 +181,7 @@ contract FriesDAOLiquidityStaking is Ownable {
             user.amount += _amount;
         }
 
-        user.rewardDebt = user.amount * pool.accFriesPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accCupPerShare / 1e12;
         emit Deposit(_msgSender(), _pid, _amount);
     }
 
@@ -203,12 +190,12 @@ contract FriesDAOLiquidityStaking is Ownable {
     function withdraw(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_msgSender()];
-        require(user.amount >= _amount, "FriesDAOLiquidityStaking: insufficient balance for withdraw");
+        require(user.amount >= _amount, "CupDAOLiquidityStaking: insufficient balance for withdraw");
         updatePool(_pid);
 
-        uint256 pending = user.amount * pool.accFriesPerShare / 1e12 - user.rewardDebt;
+        uint256 pending = user.amount * pool.accCupPerShare / 1e12 - user.rewardDebt;
         if (pending > 0) {
-            safeFriesTransfer(_msgSender(), pending);
+            safeCupTransfer(_msgSender(), pending);
         }
 
         if (_amount > 0) {
@@ -216,11 +203,11 @@ contract FriesDAOLiquidityStaking is Ownable {
             pool.lpToken.safeTransfer(address(_msgSender()), _amount);
         }
 
-        user.rewardDebt = user.amount * pool.accFriesPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accCupPerShare / 1e12;
         emit Withdraw(_msgSender(), _pid, _amount);
     }
 
-    // Withdraw ignoring FRIES rewards
+    // Withdraw ignoring CUP rewards
 
     function emergencyWithdraw(uint256 _pid) external {
         PoolInfo storage pool = poolInfo[_pid];
@@ -234,14 +221,14 @@ contract FriesDAOLiquidityStaking is Ownable {
         emit EmergencyWithdraw(_msgSender(), _pid, amount);
     }
 
-    // Safe FRIES transfer
+    // Safe CUP transfer
 
-    function safeFriesTransfer(address _to, uint256 _amount) internal {
-        uint256 friesBal = FRIES.balanceOf(address(this));
-        if (_amount > friesBal) {
-            FRIES.transfer(_to, friesBal);
+    function safeCupTransfer(address _to, uint256 _amount) internal {
+        uint256 cupBal = CUP.balanceOf(address(this));
+        if (_amount > cupBal) {
+            CUP.transfer(_to, cupBal);
         } else {
-            FRIES.transfer(_to, _amount);
+            CUP.transfer(_to, _amount);
         }
     }
 
